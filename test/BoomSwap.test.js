@@ -62,4 +62,34 @@ contract('BoomSwap', ([deployer, investor]) => {
 		})
 
 	})
+
+	describe('sellTokens()', async () => {
+		let result
+
+		before(async () => {
+			// approve
+			await token.approve(boomSwap.address, tokens('1000'), {from: investor})
+
+			result = await boomSwap.sellTokens(tokens('1000'), {from: investor})
+		})
+
+		it('User using BooMSwap sell tokens', async () => {
+			let investorBalance = await token.balanceOf(investor)
+			assert.equal(investorBalance.toString(), tokens('0'))
+
+			let boomSwapBalance = await token.balanceOf(boomSwap.address)
+			assert.equal(boomSwapBalance.toString(), tokens('1000000'))
+			boomSwapBalance = await web3.eth.getBalance(boomSwap.address)
+			assert.equal(boomSwapBalance.toString(), web3.utils.toWei('0', 'Ether'))
+
+			const event = result.logs[0].args
+			assert.equal(event.account, investor)
+			assert.equal(event.token, token.address)
+			assert.equal(event.amount.toString(), tokens('1000').toString())
+			assert.equal(event.rate.toString(), '1000')
+
+			await boomSwap.sellTokens(tokens('5000'), {from: investor}).should.be.rejected;
+		})
+
+	})
 })
